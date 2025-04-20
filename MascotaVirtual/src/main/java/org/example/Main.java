@@ -2,78 +2,106 @@ package org.example;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 
 public class Main {
-
-    public static void main(String[] args) {
-        // Cargar la mascota y las tareas
-        Pet mascota = Pet.loadPet();
-        weeklyTasks semanal = weeklyTasks.loadTask(mascota);
-        dailyTasks diaria = dailyTasks.loadTask(mascota);
-
-        JFrame frame = new JFrame("Mi App Swing");
-        frame.setSize(400, 300);
-        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-
-        // Crear modelo para JList
-        DefaultListModel<Task> taskListModel = new DefaultListModel<>();
-        for (Task task : semanal.getTasks()) {
-            taskListModel.addElement(task);
-        }
-
-        // Crear JList con el modelo
-        JList<Task> taskList = new JList<>(taskListModel);
-        taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane scrollPane = new JScrollPane(taskList);
-        frame.add(scrollPane, BorderLayout.CENTER);
-
-        // Botón para agregar una tarea
-        JButton addTaskButton = new JButton("Agregar Tarea");
-        addTaskButton.addActionListener(e -> {
-            String newTaskName = JOptionPane.showInputDialog(frame, "Nueva tarea:");
-            if (newTaskName != null && !newTaskName.isEmpty()) {
-                Task newTask = new Task(newTaskName);
-                semanal.addTask(newTask);
-                taskListModel.addElement(newTask);
+    private static JList<Task> createTaskList(DefaultListModel<Task> model, TaskList taskManager) {
+        JList<Task> list = new JList<>(model);
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                Task task = (Task) value;
+                setText((task.isComplete() ? "[✓] " : "[ ] ") + task.toString());
+                return c;
             }
         });
-        frame.add(addTaskButton, BorderLayout.SOUTH);
 
-        // agregar MouseListener para detectar doble clic y asi completar las tareas
-        taskList.addMouseListener(new MouseAdapter() {
+        list.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) { // Detectar doble clic
-                    int selectedIndex = taskList.getSelectedIndex();
-                    if (selectedIndex != -1) {
-                        Task selectedTask = taskListModel.get(selectedIndex);
-                        if (!selectedTask.isComplete()) {
-                            selectedTask.completeTask();
-                            mascota.setPoints(30);
-                            taskList.repaint(); // Refrescar la lista para reflejar el cambio
+                if (e.getClickCount() == 2) {
+                    int index = list.locationToIndex(e.getPoint());
+                    if (index != -1) {
+                        Task task = model.getElementAt(index);
+                        if (!task.isComplete()) {
+                            taskManager.completeTask(task);
+                            list.repaint();
                         } else {
-                            semanal.clearTask();
+                            taskManager.clearTask();
+                            model.clear();
+                            taskManager.getTasks().forEach(model::addElement);
                         }
                     }
                 }
             }
         });
+        return list;
+    }
 
-        // Agregar WindowListener para guardar datos al cerrar
+    public static void main(String[] args) {
+        Pet mascota = Pet.loadPet();
+        weeklyTasks semanal = weeklyTasks.loadTask(mascota);
+        dailyTasks diaria = dailyTasks.loadTask(mascota);
+
+        JFrame frame = new JFrame("Pet Task Manager");
+        frame.setSize(600, 400);
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        // Create models
+        DefaultListModel<Task> dailyModel = new DefaultListModel<>();
+        diaria.getTasks().forEach(dailyModel::addElement);
+
+        DefaultListModel<Task> weeklyModel = new DefaultListModel<>();
+        semanal.getTasks().forEach(weeklyModel::addElement);
+
+        // Create tabbed pane
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        // Daily Tasks Tab
+        JPanel dailyPanel = new JPanel(new BorderLayout());
+        JList<Task> dailyList = createTaskList(dailyModel, diaria);
+        dailyPanel.add(new JScrollPane(dailyList), BorderLayout.CENTER);
+        tabbedPane.addTab("Daily Tasks (+10 XP)", dailyPanel);
+
+        // Weekly Tasks Tab
+        JPanel weeklyPanel = new JPanel(new BorderLayout());
+        JList<Task> weeklyList = createTaskList(weeklyModel, semanal);
+        weeklyPanel.add(new JScrollPane(weeklyList), BorderLayout.CENTER);
+        tabbedPane.addTab("Weekly Tasks (+30 XP)", weeklyPanel);
+
+        // Add Task Button
+        JButton addButton = new JButton("Add Task");
+        addButton.addActionListener(e -> {
+            String taskName = JOptionPane.showInputDialog(frame, "Enter task name:");
+            if (taskName != null && !taskName.trim().isEmpty()) {
+                Task newTask = new Task(taskName);
+
+                if (tabbedPane.getSelectedIndex() == 0) { // Daily tab
+                    diaria.addTask(newTask);
+                    dailyModel.addElement(newTask);
+                } else { // Weekly tab
+                    semanal.addTask(newTask);
+                    weeklyModel.addElement(newTask);
+                }
+            }
+        });
+
+        // Layout
+        frame.add(tabbedPane, BorderLayout.CENTER);
+        frame.add(addButton, BorderLayout.SOUTH);
+
+        // Window closing handler
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                int opcion = JOptionPane.showConfirmDialog(
-                        frame,
-                        "¿Estás seguro de que deseas salir?",
-                        "Confirmar salida",
-                        JOptionPane.YES_NO_OPTION
-                );
-                if (opcion == JOptionPane.YES_OPTION) {
+                int confirm = JOptionPane.showConfirmDialog(frame,
+                        "Are you sure you want to exit?",
+                        "Exit Confirmation", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
                     mascota.savePet();
                     semanal.saveTask();
                     diaria.saveTask();

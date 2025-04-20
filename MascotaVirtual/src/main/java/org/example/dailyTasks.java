@@ -8,20 +8,20 @@ import java.util.ArrayList;
 public class dailyTasks implements TaskList, Serializable {
 
     private static final long serialVersionUID = 3L;
-    //attributes
+    // attributes
     private ArrayList<Task> taskArrayList;
     private Pet pet;
     private LocalDate currentDay; // Fecha de hoy
 
-    //constructor
+    // constructor
     public dailyTasks(Pet petInstance) {
         taskArrayList = new ArrayList<>();
         pet = petInstance;
         this.currentDay = LocalDate.now();
     }
 
-    //methods
-    public void addTask(Task task){
+    // methods
+    public void addTask(Task task) {
         taskArrayList.add(task);
     }
 
@@ -30,8 +30,8 @@ public class dailyTasks implements TaskList, Serializable {
         taskArrayList.remove(task);
     }
 
-    //metodo para serializar
-    public void saveTask(){
+    // metodo para serializar
+    public void saveTask() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("dailyTasks.ser"))) {
             oos.writeObject(this);
         } catch (IOException e) {
@@ -39,8 +39,8 @@ public class dailyTasks implements TaskList, Serializable {
         }
     }
 
-    //metodo para deserializar
-    public static dailyTasks loadTask(Pet petInstance){
+    // metodo para deserializar
+    public static dailyTasks loadTask(Pet petInstance) {
         File file = new File("dailyTasks.ser");
         if (!file.exists()) {
             return new dailyTasks(petInstance);
@@ -57,9 +57,9 @@ public class dailyTasks implements TaskList, Serializable {
 
     @Override
     public void clearTask() {
-        //este metodo va con un if preguntando si el dia ya paso
+        // este metodo va con un if preguntando si el dia ya paso
         LocalDate today = LocalDate.now();
-        if (!today.equals(currentDay)){
+        if (!today.equals(currentDay)) {
             currentDay = today; // actualizar la fecha
             taskArrayList.clear();
         }
@@ -68,13 +68,18 @@ public class dailyTasks implements TaskList, Serializable {
     @Override
     public void completeTask(Task task) {
         if (taskArrayList.contains(task) && !task.isComplete()) {
-            task.completeTask(); //marca la tarea como hecha
+            task.completeTask(); // marca la tarea como hecha
             pet.setPoints(10); // Add XP for the task to the pet
         }
     }
-    public String[] getTaskListAsArray() {//este metodo es para la interfaz
+
+    public String[] getTaskListAsArray() {// este metodo es para la interfaz
         return taskArrayList.stream()
                 .map(Task::toString)
                 .toArray(String[]::new);
+    }
+
+    public ArrayList<Task> getTasks() {
+        return taskArrayList;
     }
 }
