@@ -1,11 +1,11 @@
 //clase de la MASCOTA
 package org.example;
+
 import java.io.*;
 
 public class Pet implements Serializable {
 
     private static final long serialVersionUID = 2L;
-
 
     private int level;
     private int points;
@@ -14,10 +14,11 @@ public class Pet implements Serializable {
     public Pet() {
         this.level = 1;
         this.points = 0;
-        this.condition= 50;
+        this.condition = 50;
     }
-    //aca se pasana los puntos de las tareas para ser guardados en la mascota
-    public void setPoints(int points){
+
+    // aca se pasana los puntos de las tareas para ser guardados en la mascota
+    public void setPoints(int points) {
         this.points += points;
     }
 
@@ -33,7 +34,7 @@ public class Pet implements Serializable {
         this.level = level;
     }
 
-    public void evolve(){
+    public void evolve() {
         while (points >= condition) { // mientras los puntos sean suficientes para evolucionar
             level++;
             points -= condition; // restamos los puntos utilizados para evolucionar
@@ -41,7 +42,7 @@ public class Pet implements Serializable {
         }
     }
 
-    public void savePet(){
+    public void savePet() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("pet.ser"))) {
             oos.writeObject(this);
         } catch (IOException e) {
@@ -62,5 +63,13 @@ public class Pet implements Serializable {
             System.err.println("Error al cargar la mascota: " + e.getMessage());
             return new Pet(); // Retorna una nueva instancia en caso de error
         }
+    }
+
+    public int getCondition() {
+        return condition;
+    }
+
+    public void setCondition(int condition) {
+        this.condition = condition;
     }
 }
