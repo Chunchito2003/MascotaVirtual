@@ -4,18 +4,18 @@ package org.example;
 import java.io.Serializable;
 
 public class Task implements Serializable {
-    //attributes
+    // attributes
     private String description;
     private boolean complete;
 
-    //constructor
+    // constructor
     public Task(String description) {
         this.complete = false;
         this.description = description;
     }
 
-    //methods
-    public void writeTask(String description){
+    // methods
+    public void writeTask(String description) {
         this.description = description;
     }
 
@@ -31,8 +31,13 @@ public class Task implements Serializable {
         return description;
     }
 
+    // @Override
+    // public String toString() {
+    // return (complete ? "[✔] " : "[ ] ") + description;
+    // }
+
     @Override
     public String toString() {
-        return (complete ? "[✔] " : "[ ] ") + description;
+        return description;
     }
 }
